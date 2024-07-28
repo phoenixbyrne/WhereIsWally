@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Where's Wally?</title>
+    <script src="https://unpkg.com/jspsych@7.3.4"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.2.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-image-keyboard-response@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-preload@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-fullscreen@1.1.1/dist/index.browser.min.js"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-image-button-response@1.2.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-browser-check@1.0.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-call-function@1.1.3"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <link
+      href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <style>
+      #calibration_card {
+        width: 310px;
+        height: 190px;
+        border: 2px solid red;
+        border-radius: 20px;
+        margin: 20px auto;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 14px;
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body></body>
+  <script>
+    // Function to get or create a subject ID
+    // function getSubjectId() {
+    //   return new Promise((resolve, reject) => {
+    //     let participant_id = localStorage.getItem("participant_id");
+    //     if (!participant_id) {
+    //       participant_id = "S" + Math.floor(100000 + Math.random() * 900000);
+    //     }
+
+    //     // Check if this participant ID has been used before
+    //     $.ajax({
+    //       type: "POST",
+    //       url: "check_participant.php",
+    //       data: { participant_id: participant_id },
+    //       success: function (response) {
+    //         if (response === "new") {
+    //           localStorage.setItem("participant_id", participant_id);
+    //           resolve(participant_id);
+    //         } else {
+    //         //   reject("This participant has already taken part in the study.");
+    //         }
+    //       },
+    //       error: function () {
+    //         reject("Error checking participant ID.");
+    //       },
+    //     });
+    //   });
+    // }
+
+//     // Use the function
+//     getSubjectId()
+//       .then((participant_id) => {
+//         console.log("participant_id", participant_id);
+//         // Start your experiment here
+//         runExperiment(participant_id);
+//       })
+//       .catch((error) => {
+//         // Display error message to the user
+//         document.body.innerHTML = `
+//     <h1>Error</h1>
+//     <p>Our records indicate that you have already participated in this study.</p>
+//   `;
+//       });
+
+function getSubjectId() {
+    return participant_id = "S" + Math.floor(100000 + Math.random() * 900000);
+}
+getSubjectId();
+console.log(participant_id);
+// Start your experiment here
+        runExperiment(participant_id);
+
+    function runExperiment(participant_id) {
+      // Function to get formatted date and time as YYYY-MM-DD HH:MM:SS
+      function getFormattedDateTime() {
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        const seconds = String(date.getSeconds()).padStart(2, "0");
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      }
+
+      // Update the sendToREDCap function
+      function sendToREDCap(data) {
+        var requiredFields = [
+          "click_x",
+          "click_y",
+          "reaction_time",
+          "image_width_px",
+          "image_height_px",
+          "raw_click_x",
+          "raw_click_y",
+          "image_top_left_x",
+          "image_top_left_y",
+        ];
+        var missingFields = requiredFields.filter(
+          (field) => data[field] === undefined
+        );
+
+        if (missingFields.length > 0) {
+          console.error("Missing required fields:", missingFields);
+          return;
+        }
+
+        var redcapData = {
+          record_id: participant_id,
+          redcap_event_name: "trial_data",
+          date: getFormattedDateTime(),
+          trial_number: jsPsych.data.get().count(),
+          rt: data.reaction_time,
+          stimulus: data.image_filename,
+          response_x: data.click_x,
+          response_y: data.click_y,
+          image_width_px: data.image_width_px,
+          image_height_px: data.image_height_px,
+          calibration_zoom: data.calibration_zoom,
+          final_rect_width: data.final_rect_width,
+          final_rect_height: data.final_rect_height,
+          raw_click_x: data.raw_click_x,
+          raw_click_y: data.raw_click_y,
+          fullscreen: data.fullscreen,
+          screen_width: screen.width,
+          screen_height: screen.height,
+          browser: browserInfo.browser,
+          browser_version: browserInfo.browser_version,
+          os: browserInfo.os,
+          image_top_left_x: data.image_top_left_x,
+          image_top_left_y: data.image_top_left_y,
+        };
+
+        $.ajax({
+          type: "POST",
+          url: "wally.php",
+          data: redcapData,
+          success: function (response) {
+            console.log(
+              "Data sent successfully to REDCap for trial " +
+                redcapData.trial_number
+            );
+            console.log("REDCap response:", response);
+          },
+          error: function (jqXHR, textStatus, errorThrown) {
+            console.error(
+              "Error sending data to REDCap for trial " +
+                redcapData.trial_number +
+                ":",
+              textStatus,
+              errorThrown
+            );
+          },
+        });
+      }
+
+      // Initialise jsPsych
+      var jsPsych = initJsPsych();
+
+      var browserInfo;
+
+      jsPsych.data.addProperties({ ID: participant_id });
+
+      // Create timeline
+      var timeline = [];
+
+      // Seeded random number generator
+      function seededRandom(seed) {
+        var x = Math.sin(seed++) * 10000;
+        return x - Math.floor(x);
+      }
+
+      // Fisher-Yates shuffle with seeded randomness
+      function seededShuffle(array, seed) {
+        let currentIndex = array.length,
+          randomIndex;
+        let seedValue = seed;
+
+        let shuffledArray = array.slice();
+
+        while (currentIndex != 0) {
+          randomIndex = Math.floor(seededRandom(seedValue) * currentIndex);
+          currentIndex--;
+          [shuffledArray[currentIndex], shuffledArray[randomIndex]] = [
+            shuffledArray[randomIndex],
+            shuffledArray[currentIndex],
+          ];
+          seedValue++;
+        }
+
+        return shuffledArray;
+      }
+
+      // Generate image filenames
+      var images = [];
+      for (var i = 1; i <= 21; i++) {
+        for (var j = 1; j <= 2; j++) {
+          images.push("cropped/" + i + "_" + j + ".jpg");
+        }
+      }
+
+      // Seed for randomisation (change this value to get different randomisations)
+      const RANDOM_SEED = 12345;
+
+      //   // Shuffle the images array
+      //   var shuffledImages = seededShuffle(images, RANDOM_SEED);
+
+      //   // Preload images
+      //   var preload = {
+      //     type: jsPsychPreload,
+      //     images: shuffledImages,
+      //   };
+
+      //   // Generate trial stimuli array
+      //   var test_stimuli = shuffledImages.map((img) => ({ stimulus: img }));
+
+      // Load stimuli from CSV
+      var stimuli;
+
+      // CSV loading trial
+      var load_stimuli = {
+        type: jsPsychCallFunction,
+        func: function () {
+          return new Promise((resolve) => {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "stimuli.csv");
+            xhr.onload = function () {
+              if (xhr.status === 200) {
+                stimuli = jsPsych.data.parseCSV(xhr.responseText);
+                resolve();
+              }
+            };
+            xhr.send();
+          });
+        },
+      };
+
+      // Preload images
+      var preload = {
+        type: jsPsychPreload,
+        images: function () {
+          return stimuli.map(function (stim) {
+            return stim.stimulus;
+          });
+        },
+      };
+
+      // Define welcome message trial
+      var welcome = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus:
+          "Welcome to the experiment.<br> <i>Press any key to begin.</i>",
+      };
+
+      // Define instructions trial
+      var instructions = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus:
+          "<h1>General instructions: Where's Wally? Task </h1><br>" +
+          "<div style='text-align: center; width:80%; margin:auto;'><p>In this experiment you will be presented with Where's Wally scenes. Your task is to identify Wally in each of these scenes. Once found, please click on <b> his face</b>.</p>" +
+          "<p>You will only have one attempt at the task.</p>" +
+          "<p><i>Press any key to begin.</i></p>",
+      };
+
+      // Define the calibration
+      var calibration_trial = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: function () {
+          return `
+        <h2>Screen Calibration</h2>
+        <div id="calibration_card">
+          Please adjust the zoom until this box is the same size as a credit card or driver's license.
+        </div>
+        <div style="margin-top: 20px;">
+          <button id="zoom_in" class="jspsych-btn">Zoom In (+)</button>
+          <button id="zoom_out" class="jspsych-btn">Zoom Out (-)</button>
+          <button id="proceed" class="jspsych-btn">Proceed</button>
+        </div>
+      `;
+        },
+        choices: "NO_KEYS",
+        on_load: function () {
+          window.current_zoom = 1;
+          window.rect_width = 310;
+          window.rect_height = 190;
+
+          function updateRectSize(factor) {
+            window.rect_width *= factor;
+            window.rect_height *= factor;
+            var card = document.getElementById("calibration_card");
+            card.style.width = window.rect_width + "px";
+            card.style.height = window.rect_height + "px";
+          }
+
+          function updateZoom(factor) {
+            window.current_zoom *= factor;
+            updateRectSize(factor);
+          }
+
+          document
+            .getElementById("zoom_in")
+            .addEventListener("click", function () {
+              updateZoom(1.025);
+            });
+
+          document
+            .getElementById("zoom_out")
+            .addEventListener("click", function () {
+              updateZoom(0.975);
+            });
+
+          document
+            .getElementById("proceed")
+            .addEventListener("click", function () {
+              jsPsych.finishTrial();
+            });
+
+          // Set initial size of the calibration card
+          updateRectSize(1);
+        },
+        on_finish: function (data) {
+          jsPsych.data.addProperties({
+            calibration_zoom: window.current_zoom,
+            final_rect_width: window.rect_width,
+            final_rect_height: window.rect_height,
+          });
+        },
+      };
+
+      // Define fixation
+      var fixation = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: '<div style="font-size:60px;">+</div>',
+        trial_duration: 1000,
+      };
+
+      // Select only the first 3 stimuli
+      //test_stimuli = test_stimuli.slice(0, 3);
+
+      // Define test trials
+      var test = {
+        type: jsPsychImageKeyboardResponse,
+        stimulus: jsPsych.timelineVariable("stimulus"),
+        choices: "NO_KEYS",
+        trial_duration: null,
+        response_ends_trial: false,
+        data: {
+          image_filename: jsPsych.timelineVariable("stimulus"),
+        },
+        on_load: function (trial) {
+          // Check if still in fullscreen
+          var isFullscreen = document.fullscreenElement !== null;
+
+          var startTime = performance.now();
+
+          // Get the calibration data
+          var calibrationData = jsPsych.data.get().last(1).values()[0];
+          var finalRectWidth = calibrationData.final_rect_width;
+          var finalRectHeight = calibrationData.final_rect_height;
+
+          // Calculate pixels per cm
+          var pixelsPerCmWidth = finalRectWidth / 8.56;
+          var pixelsPerCmHeight = finalRectHeight / 5.4;
+
+          var pixelsPerCm = (pixelsPerCmWidth + pixelsPerCmHeight) / 2;
+
+          // Calculate the image dimensions in pixels
+          var imageWidthPx = Math.round(27.41 * pixelsPerCmWidth);
+          var imageHeightPx = Math.round(16.91 * pixelsPerCmHeight);
+
+          // Calculate circle diameter in pixels (0.5 cm)
+          var circleDiameterPx = Math.round(0.5 * pixelsPerCm);
+
+          // Get the image element
+          var image = document.querySelector(
+            "#jspsych-image-keyboard-response-stimulus"
+          );
+
+          // Create a container for the image and circle
+          var container = document.createElement("div");
+          container.style.position = "relative";
+          container.style.width = imageWidthPx + "px";
+          container.style.height = imageHeightPx + "px";
+          container.style.margin = "0 auto";
+
+          // Style the image
+          image.style.position = "absolute";
+          image.style.top = "0";
+          image.style.left = "0";
+          image.style.width = "100%";
+          image.style.height = "100%";
+          image.style.objectFit = "contain";
+
+          // Insert the container and move the image into it
+          image.parentNode.insertBefore(container, image);
+          container.appendChild(image);
+
+          // Create the selection circle
+          var circle = document.createElement("div");
+          circle.style.position = "absolute";
+          circle.style.border = "2px solid red";
+          circle.style.borderRadius = "50%";
+          circle.style.width = circleDiameterPx + "px";
+          circle.style.height = circleDiameterPx + "px";
+          circle.style.display = "none";
+          container.appendChild(circle);
+
+          // Add click event listener to the container
+          container.addEventListener("click", function (e) {
+            // Recheck fullscreen status at the time of click
+            isFullscreen = document.fullscreenElement !== null;
+
+            // Calculate reaction time
+            var endTime = performance.now();
+            var reactionTime = endTime - startTime;
+
+            // Calculate click position relative to the image dimensions
+            var rect = container.getBoundingClientRect();
+            var clickX = e.clientX - rect.left;
+            var clickY = e.clientY - rect.top;
+
+            // Normalize click coordinates to 0-100 scale
+            var normalizedX = Math.round((clickX / imageWidthPx) * 100);
+            var normalizedY = Math.round((clickY / imageHeightPx) * 100);
+
+            // Ensure the normalized coordinates are within 0-100 range
+            normalizedX = Math.max(0, Math.min(100, normalizedX));
+            normalizedY = Math.max(0, Math.min(100, normalizedY));
+
+            // Update circle position and make it visible
+            circle.style.left = clickX - circleDiameterPx / 2 + "px";
+            circle.style.top = clickY - circleDiameterPx / 2 + "px";
+            circle.style.display = "block";
+
+            // Store the click data
+            var clickData = {
+              click_x: normalizedX,
+              click_y: normalizedY,
+              reaction_time: reactionTime,
+              image_width_px: imageWidthPx,
+              image_height_px: imageHeightPx,
+              raw_click_x: clickX,
+              raw_click_y: clickY,
+              fullscreen: isFullscreen,
+              image_top_left_x: Math.round(rect.left),
+              image_top_left_y: Math.round(rect.top),
+            };
+
+            jsPsych.data.write(clickData);
+
+            // Send the data to REDCap
+            sendToREDCap({
+              ...jsPsych.data.get().last(1).values()[0],
+              ...clickData,
+            });
+
+            // End the trial after a brief delay to allow the circle to be seen
+            setTimeout(function () {
+              jsPsych.finishTrial();
+            }, 300);
+          });
+        },
+      };
+
+    //   // Define test procedure
+    //   var test_procedure = {
+    //     timeline: [fixation, test],
+    //     timeline_variables: test_stimuli,
+    //     randomize_order: false,
+    //   };
+    
+      // Define test procedure
+  var test_procedure = {
+    timeline: [fixation, test],
+    timeline_variables: function() {
+      return jsPsych.data.stimuli.map(function(stim) {
+        return {
+          stimulus: stim.stimulus,
+          data: stim
+        };
+      });
+    },
+    randomize_order: false
+  };
+
+      // Get screen info
+      var screen_setting = {
+        type: jsPsychBrowserCheck,
+        on_finish: function (data) {
+          browserInfo = data;
+        },
+      };
+
+      // Enter fullscreen
+      var enter_fullscreen = {
+        type: jsPsychFullscreen,
+        fullscreen_mode: true,
+      };
+
+      // Exit fullscreen
+      var exit_fullscreen = {
+        type: jsPsychFullscreen,
+        fullscreen_mode: false,
+        delay_after: 0,
+      };
+
+      // Create the end screen
+      var end = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `
+        <p>This is the end of the task. Your data has been submitted to our database.</p>
+        <p>Thank you for your participation!</p>
+      `,
+      };
+
+      // TIMELINE
+      timeline.push(welcome);
+      timeline.push(preload);
+      timeline.push(instructions);
+      timeline.push(enter_fullscreen);
+      timeline.push(screen_setting);
+      timeline.push(calibration_trial);
+      timeline.push(test_procedure);
+      timeline.push(exit_fullscreen);
+      timeline.push(end);
+
+      // Start the experiment
+      jsPsych.run(timeline);
+    }
+  </script>
+</html>

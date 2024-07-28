@@ -13,6 +13,7 @@
     <script src="https://unpkg.com/@jspsych/plugin-call-function@1.1.3"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="stimuli.js"></script>
 
     <link
       href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css"
@@ -36,56 +37,59 @@
   </head>
   <body></body>
   <script>
-    // Function to get or create a subject ID
+
+    // // //DEBUGGING ONLY
     // function getSubjectId() {
-    //   return new Promise((resolve, reject) => {
-    //     let participant_id = localStorage.getItem("participant_id");
-    //     if (!participant_id) {
-    //       participant_id = "S" + Math.floor(100000 + Math.random() * 900000);
-    //     }
-
-    //     // Check if this participant ID has been used before
-    //     $.ajax({
-    //       type: "POST",
-    //       url: "check_participant.php",
-    //       data: { participant_id: participant_id },
-    //       success: function (response) {
-    //         if (response === "new") {
-    //           localStorage.setItem("participant_id", participant_id);
-    //           resolve(participant_id);
-    //         } else {
-    //         //   reject("This participant has already taken part in the study.");
-    //         }
-    //       },
-    //       error: function () {
-    //         reject("Error checking participant ID.");
-    //       },
-    //     });
-    //   });
+    //   return (participant_id =
+    //     "S" + Math.floor(100000 + Math.random() * 900000));
     // }
+    // getSubjectId();
+    // console.log(participant_id);
+    // // Start your experiment here
+    // runExperiment(participant_id);
+    
+    // Function to get or create a subject ID
+    function getSubjectId() {
+      return new Promise((resolve, reject) => {
+        let participant_id = localStorage.getItem("participant_id");
+        if (!participant_id) {
+          participant_id = "S" + Math.floor(100000 + Math.random() * 900000);
+        }
 
-//     // Use the function
-//     getSubjectId()
-//       .then((participant_id) => {
-//         console.log("participant_id", participant_id);
-//         // Start your experiment here
-//         runExperiment(participant_id);
-//       })
-//       .catch((error) => {
-//         // Display error message to the user
-//         document.body.innerHTML = `
-//     <h1>Error</h1>
-//     <p>Our records indicate that you have already participated in this study.</p>
-//   `;
-//       });
+        // Check if this participant ID has been used before
+        $.ajax({
+          type: "POST",
+          url: "check_participant.php",
+          data: { participant_id: participant_id },
+          success: function (response) {
+            if (response === "new") {
+              localStorage.setItem("participant_id", participant_id);
+              resolve(participant_id);
+            } else {
+              reject("This participant has already taken part in the study.");
+            }
+          },
+          error: function () {
+            reject("Error checking participant ID.");
+          },
+        });
+      });
+    }
 
-function getSubjectId() {
-    return participant_id = "S" + Math.floor(100000 + Math.random() * 900000);
-}
-getSubjectId();
-console.log(participant_id);
-// Start your experiment here
-        runExperiment(participant_id);
+        // Use the function
+        getSubjectId()
+          .then((participant_id) => {
+            console.log("participant_id", participant_id);
+            // Start your experiment here
+            runExperiment(participant_id);
+          })
+          .catch((error) => {
+            // Display error message to the user
+            document.body.innerHTML = `
+        <h1>Error</h1>
+        <p>Our records indicate that you have already participated in this study.</p>
+      `;
+          });
 
     function runExperiment(participant_id) {
       // Function to get formatted date and time as YYYY-MM-DD HH:MM:SS
@@ -181,85 +185,12 @@ console.log(participant_id);
       // Create timeline
       var timeline = [];
 
-      // Seeded random number generator
-      function seededRandom(seed) {
-        var x = Math.sin(seed++) * 10000;
-        return x - Math.floor(x);
-      }
-
-      // Fisher-Yates shuffle with seeded randomness
-      function seededShuffle(array, seed) {
-        let currentIndex = array.length,
-          randomIndex;
-        let seedValue = seed;
-
-        let shuffledArray = array.slice();
-
-        while (currentIndex != 0) {
-          randomIndex = Math.floor(seededRandom(seedValue) * currentIndex);
-          currentIndex--;
-          [shuffledArray[currentIndex], shuffledArray[randomIndex]] = [
-            shuffledArray[randomIndex],
-            shuffledArray[currentIndex],
-          ];
-          seedValue++;
-        }
-
-        return shuffledArray;
-      }
-
-      // Generate image filenames
-      var images = [];
-      for (var i = 1; i <= 21; i++) {
-        for (var j = 1; j <= 2; j++) {
-          images.push("cropped/" + i + "_" + j + ".jpg");
-        }
-      }
-
-      // Seed for randomisation (change this value to get different randomisations)
-      const RANDOM_SEED = 12345;
-
-      //   // Shuffle the images array
-      //   var shuffledImages = seededShuffle(images, RANDOM_SEED);
-
-      //   // Preload images
-      //   var preload = {
-      //     type: jsPsychPreload,
-      //     images: shuffledImages,
-      //   };
-
-      //   // Generate trial stimuli array
-      //   var test_stimuli = shuffledImages.map((img) => ({ stimulus: img }));
-
-      // Load stimuli from CSV
-      var stimuli;
-
-      // CSV loading trial
-      var load_stimuli = {
-        type: jsPsychCallFunction,
-        func: function () {
-          return new Promise((resolve) => {
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET", "stimuli.csv");
-            xhr.onload = function () {
-              if (xhr.status === 200) {
-                stimuli = jsPsych.data.parseCSV(xhr.responseText);
-                resolve();
-              }
-            };
-            xhr.send();
-          });
-        },
-      };
-
       // Preload images
       var preload = {
         type: jsPsychPreload,
-        images: function () {
-          return stimuli.map(function (stim) {
-            return stim.stimulus;
-          });
-        },
+        images: test_stimuli.map(function (stim) {
+          return stim.stimulus;
+        }),
       };
 
       // Define welcome message trial
@@ -352,7 +283,7 @@ console.log(participant_id);
       };
 
       // Select only the first 3 stimuli
-      //test_stimuli = test_stimuli.slice(0, 3);
+    //   test_stimuli = test_stimuli.slice(0, 3);
 
       // Define test trials
       var test = {
@@ -479,26 +410,12 @@ console.log(participant_id);
         },
       };
 
-    //   // Define test procedure
-    //   var test_procedure = {
-    //     timeline: [fixation, test],
-    //     timeline_variables: test_stimuli,
-    //     randomize_order: false,
-    //   };
-    
       // Define test procedure
-  var test_procedure = {
-    timeline: [fixation, test],
-    timeline_variables: function() {
-      return jsPsych.data.stimuli.map(function(stim) {
-        return {
-          stimulus: stim.stimulus,
-          data: stim
-        };
-      });
-    },
-    randomize_order: false
-  };
+      var test_procedure = {
+        timeline: [fixation, test],
+        timeline_variables: test_stimuli,
+        randomize_order: false,
+      };
 
       // Get screen info
       var screen_setting = {

@@ -37,8 +37,7 @@
   </head>
   <body></body>
   <script>
-
-    // // //DEBUGGING ONLY
+    // //DEBUGGING ONLY
     // function getSubjectId() {
     //   return (participant_id =
     //     "S" + Math.floor(100000 + Math.random() * 900000));
@@ -47,7 +46,7 @@
     // console.log(participant_id);
     // // Start your experiment here
     // runExperiment(participant_id);
-    
+
     // Function to get or create a subject ID
     function getSubjectId() {
       return new Promise((resolve, reject) => {
@@ -200,14 +199,34 @@
           "Welcome to the experiment.<br> <i>Press any key to begin.</i>",
       };
 
-      // Define instructions trial
+      // Define instruction trial
       var instructions = {
         type: jsPsychHtmlKeyboardResponse,
-        stimulus:
-          "<h1>General instructions: Where's Wally? Task </h1><br>" +
-          "<div style='text-align: center; width:80%; margin:auto;'><p>In this experiment you will be presented with Where's Wally scenes. Your task is to identify Wally in each of these scenes. Once found, please click on <b> his face</b>.</p>" +
-          "<p>You will only have one attempt at the task.</p>" +
-          "<p><i>Press any key to begin.</i></p>",
+        stimulus: `
+        <h1>General instructions: Where's Wally? Task</h1><br>
+    <div style='text-align: center; width:80%; margin:auto;'>
+      <p>In this experiment you will be presented with Where's Wally scenes.</p>
+      <p>Where's Wally involves busy and complicated visual scenes, with a man called Wally, hidden somewhere within.</p>
+      
+      <div style='margin: 20px 0;'>
+        <img id="wally-image" src='WallyForInstructions.png' alt='Wally' style='width: 150px; height: auto;' onerror="this.style.display='none'; document.getElementById('wally-error').style.display='block';">
+        <p id="wally-error" style="display:none; color: red;">Error loading Wally image</p>
+      </div>
+
+      <p>Your task is to find Wally in each of these scenes. Once found, please click on <b>his face</b>.</p>
+      <p>You can only complete the whole task once.</p>
+      <p><i>Press any key to begin.</i></p>
+    </div>
+  `,
+        on_load: function () {
+          var img = document.getElementById("wally-image");
+          img.onload = function () {
+            console.log("Wally image loaded successfully");
+          };
+          img.onerror = function () {
+            console.error("Failed to load Wally image");
+          };
+        },
       };
 
       // Define the calibration
@@ -283,7 +302,7 @@
       };
 
       // Select only the first 3 stimuli
-    //   test_stimuli = test_stimuli.slice(0, 3);
+      //   test_stimuli = test_stimuli.slice(0, 3);
 
       // Define test trials
       var test = {
